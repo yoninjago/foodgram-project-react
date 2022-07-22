@@ -1,8 +1,10 @@
+from djoser.serializers import UserCreateSerializer, UserSerializer
 from drf_extra_fields.fields import Base64ImageField
 from rest_framework import serializers
 
 from recipes.models import Ingredient, Recipe, RecipeIngredient, Tag
-from users.serializers import CustomUserSerializer
+from users.models import Follow, User
+
 
 NEED_INGREDIENTS = 'Добавьте минимум один ингредиент!'
 UNIQUE_INGREDIENTS = 'Ингредиенты должны быть уникальными!'
@@ -10,6 +12,70 @@ AMOUNT_INGREDIENTS = 'Количество ингредиента должно �
 NEED_TAGS = 'Добавьте минимум один тег!'
 UNIQUE_TAGS = 'Теги должны быть уникальными!'
 UNIQUE_FAVORITE_RECIPE = 'Данный рецепт был добавлен ранее.'
+
+
+class CustomUserCreateSerializer(UserCreateSerializer):
+
+    class Meta:
+        model = User
+        fields = ('id', 'email', 'username',
+                  'password', 'first_name', 'last_name')
+        extra_kwargs = {'password': {'write_only': True}}
+
+    def create(self, validated_data):
+        user = User.objects.create(
+            email=validated_data['email'],
+            username=validated_data['username'],
+            first_name=validated_data['first_name'],
+            last_name=validated_data['last_name'],
+        )
+        user.set_password(validated_data['password'])
+        user.save()
+        return user
+
+
+class CustomUserSerializer(UserSerializer):
+    """
+    Отображает, подписан ли текущий пользователь на запрашиваемого.
+    """
+    is_subscribed = serializers.SerializerMethodField()
+
+    class Meta:
+        model = User
+        fields = ('email', 'id', 'username',
+                  'first_name', 'last_name', 'is_subscribed')
+
+    def get_is_subscribed(self, obj):
+        user = self.context.get('request').user
+        if user.is_anonymous:
+            return False
+        return Follow.objects.filter(user=user, author=obj.id).exists()
+
+
+class FollowSerializer(CustomUserSerializer):
+    """
+    Вывод подписок пользователя.
+    """
+    recipes = serializers.SerializerMethodField()
+    recipes_count = serializers.SerializerMethodField()
+
+    class Meta:
+        model = User
+        fields = ('email', 'id', 'username',
+                  'first_name', 'last_name', 'is_subscribed',
+                  'recipes', 'recipes_count')
+
+    def get_recipes_count(self, obj):
+        return obj.recipes.count()
+
+    def get_recipes(self, obj):
+        recipes = obj.recipes.all()
+        recipes_limit = (self.context.get('request')
+                         .query_params.get('recipes_limit')
+                         )
+        if recipes_limit:
+            recipes = recipes[:int(recipes_limit)]
+        return MinimumRecipeSerializer(recipes, many=True).data
 
 
 class TagSerializer(serializers.ModelSerializer):
@@ -49,7 +115,9 @@ class RecipeGetSerializer(serializers.ModelSerializer):
     """
     tags = TagSerializer(read_only=True, many=True)
     author = CustomUserSerializer(read_only=True)
-    ingredients = serializers.SerializerMethodField()
+    ingredients = RecipeIngredientSerializer(
+        source='recipe_ingredients', read_only=True, many=True
+        )
     is_favorited = serializers.SerializerMethodField()
     is_in_shopping_cart = serializers.SerializerMethodField()
 
@@ -58,11 +126,6 @@ class RecipeGetSerializer(serializers.ModelSerializer):
         fields = ('id', 'tags', 'author', 'ingredients',
                   'is_favorited', 'is_in_shopping_cart',
                   'name', 'image', 'text', 'cooking_time')
-
-    def get_ingredients(self, obj):
-        return RecipeIngredientSerializer(
-            RecipeIngredient.objects.filter(recipe=obj), many=True
-        ).data
 
     def get_is_favorited(self, obj):
         user = self.context.get('request').user
@@ -109,11 +172,11 @@ class RecipeSerializer(serializers.ModelSerializer):
 
     @staticmethod
     def create_ingredients(ingredients, recipe):
-        for ingredient in ingredients:
-            RecipeIngredient.objects.create(
-                recipe=recipe, ingredient=ingredient['id'],
-                amount=ingredient['amount']
-            )
+        RecipeIngredient.objects.bulk_create([RecipeIngredient(
+            recipe=recipe,
+            ingredient=ingredient['id'],
+            amount=ingredient['amount']
+            ) for ingredient in ingredients])
 
     def create(self, validated_data):
         tags = validated_data.pop('tags')

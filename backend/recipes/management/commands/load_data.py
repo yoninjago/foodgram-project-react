@@ -1,10 +1,10 @@
 import json
 import os
 
-from foodgram.settings import BASE_DIR
 from django.core.management.base import BaseCommand, CommandError
 from django.db.utils import IntegrityError
 
+from foodgram.settings import BASE_DIR
 from recipes.models import Ingredient
 
 DATA_ROOT = os.path.join(BASE_DIR, 'data')
@@ -29,7 +29,7 @@ class Command(BaseCommand):
                             measurement_unit=ingredient['measurement_unit']
                             )
                     except IntegrityError:
-                        print(f'Ошибка! Ингридиет {ingredient["name"]} '
+                        print(f'Ошибка! Ингредиент {ingredient["name"]} '
                               f'({ingredient["measurement_unit"]}) '
                               f'уже присутствует БД')
 
