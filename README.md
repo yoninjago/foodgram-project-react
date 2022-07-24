@@ -7,51 +7,42 @@
 - Python 3.10
 - Django 3.2
 - Django Rest Framework 3.13
+- JavaScript
+- React
 - Postgres 13
 - Docker
 - Nginx
 
-### Установка проекта локально
+### Где посмотреть
+ URL : http://84.201.152.180/
+ Логин и пароль для админа
+  username: admin
+  email: admin@foodgram.ru
+  password: f4UodKM36
 
+## Запуск проекта в Docker контейнерах
 * Склонировать репозиторий на локальную машину:
 ```bash
 git clone https://github.com/yoninjago/foodgram-project-react.git
 cd foodgram-project-react
 ```
-
-* Cоздать и активировать виртуальное окружение:
-
-```bash
-python3.10 -m venv venv
+* Cоздайте файл `.env` в директории `/infra/` со следующим содержанием:
+```
+SECRET_KEY=секретный ключ django
+DB_ENGINE=django.db.backends.postgresql # указываем, что работаем с postgresql
+DB_NAME=postgres # имя базы данных
+POSTGRES_USER=postgres # логин для подключения к базе данных
+POSTGRES_PASSWORD=postgres # пароль для подключения к БД (установите свой)
+DB_HOST=db # название сервиса (контейнера)
+DB_PORT=5432 # порт для подключения к БД
+```
+* Запустить Docker
+```
+sudo docker-compose up -d
 ```
 
-```bash
-source venv/bin/activate
-```
+После этого приложение будет доступно по адресу http://localhost/
 
-* Перейти в директорию и установить зависимости из файла requirements.txt:
-
-```bash
-cd backend/
-pip install -r requirements.txt
-```
-
-* Выполнить миграции:
-
-```bash
-python manage.py migrate
-```
-
-* Загрузить ингредиенты в БД:
-
-```bash
-python manage.py load_data ingredients.json
-```
-
-* Запустить сервер:
-```bash
-python manage.py runserver
-```
-
-### Запуск проекта в Docker контейнерах на сервере
-Будет доступно после прохождения первой части ревью
+### Авторы
+[Трошин Сергей](https://github.com/yoninjago/) - Python разработчик. Разработал бэкенд и деплой для сервиса Foodgram.  
+[Яндекс.Практикум](https://github.com/yandex-praktikum) Фронтенд для сервиса Foodgram.

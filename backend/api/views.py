@@ -41,6 +41,7 @@ SELF_SUBSCRIPTION = 'Подписка на себя запрещена!'
 class TagsViewSet(ReadOnlyModelViewSet):
     queryset = Tag.objects.all()
     serializer_class = TagSerializer
+    pagination_class = None
 
 
 class IngredientsViewSet(ReadOnlyModelViewSet):
@@ -48,6 +49,7 @@ class IngredientsViewSet(ReadOnlyModelViewSet):
     serializer_class = IngredientSerializer
     filter_backends = (filters.SearchFilter,)
     search_fields = ('^name',)
+    pagination_class = None
 
 
 class RecipesViewSet(ModelViewSet):
@@ -111,7 +113,7 @@ class RecipesViewSet(ModelViewSet):
             recipe__shopping_cart__user=request.user).values_list(
                     'ingredient__name',
                     'ingredient__measurement_unit'
-                ).annotate(amount=Sum('amount'))
+                ).annotate(count=Sum('amount'))
         pdfmetrics.registerFont(
             TTFont(FONT_NAME, FONT_PATH, 'UTF-8')
             )
