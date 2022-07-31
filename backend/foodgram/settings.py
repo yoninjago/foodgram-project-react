@@ -109,11 +109,11 @@ USE_L10N = True
 USE_TZ = True
 
 
-STATIC_URL = '/static/'
+STATIC_URL = '/backend_static/'
 
 STATICFILES_DIRS = (Path(BASE_DIR, 'api', 'static/'),)
 
-STATIC_ROOT = Path(BASE_DIR, 'static')
+STATIC_ROOT = Path(BASE_DIR, 'backend_static')
 MEDIA_URL = '/media/'
 
 MEDIA_ROOT = Path(BASE_DIR, 'media')
